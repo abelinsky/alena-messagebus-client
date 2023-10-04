@@ -38,7 +38,11 @@ class Message:
             str: сообщение в формате json.
         """
         return json.dumps(
-            {"type": self.msg_type, "payload": self.payload, "context": self.context}
+            {
+                "type": self.message_type,
+                "payload": self.payload,
+                "context": self.context,
+            }
         )
 
     @staticmethod
@@ -55,7 +59,9 @@ class Message:
         """
         obj = json.loads(value)
         return Message(
-            obj.get("type") or "", obj.get("payload") or {}, obj.get("context") or {}
+            obj.get("type") or "",
+            obj.get("payload") or {},
+            obj.get("context") or {},
         )
 
     def forward(self, msg_type: str, payload=None):
@@ -140,7 +146,9 @@ class CollectionMessage(Message):
     these states back to the origin.
     """
 
-    def __init__(self, msg_type, handler_id, query_id, payload=None, context=None):
+    def __init__(
+        self, msg_type, handler_id, query_id, payload=None, context=None
+    ):
         super().__init__(msg_type, payload, context)
         self.handler_id = handler_id
         self.query_id = query_id
@@ -158,7 +166,11 @@ class CollectionMessage(Message):
             CollectionMessage based on the original Message object
         """
         return cls(
-            message.msg_type, handler_id, query_id, message.payload, message.context
+            message.msg_type,
+            handler_id,
+            query_id,
+            message.payload,
+            message.context,
         )
 
     def success(self, payload=None, context=None):

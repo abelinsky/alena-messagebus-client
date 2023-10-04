@@ -10,7 +10,7 @@ import logging
 from threading import Thread, Lock
 from os.path import isfile, expanduser
 
-from alena_messagebus_client import Message
+import alena_messagebus_client as client
 
 
 LOG = logging.getLogger()
@@ -96,7 +96,7 @@ class EventScheduler(Thread):
                 remaining = [(t, r, d) for t, r, d in evt if t > current_time]
                 # Trigger registered methods
                 for sched_time, repeat, data in passed:
-                    pending_messages.append(Message(event, data))
+                    pending_messages.append(client.Message(event, data))
                     # if this is a repeated event add a new trigger time
                     if repeat:
                         next_time = repeat_time(sched_time, repeat)
@@ -128,7 +128,9 @@ class EventScheduler(Thread):
             # Don't schedule if the event is repeating and already scheduled
             if repeat and event in self.events:
                 LOG.debug(
-                    "Repeating event {} is already scheduled, discarding".format(event)
+                    "Repeating event {} is already scheduled, discarding".format(
+                        event
+                    )
                 )
             else:
                 # add received event and time
@@ -171,7 +173,9 @@ class EventScheduler(Thread):
         """Remove repeating events from events dict."""
         with self.event_lock:
             for evt in self.events:
-                self.events[evt] = [tup for tup in self.events[evt] if tup[1] is None]
+                self.events[evt] = [
+                    tup for tup in self.events[evt] if tup[1] is None
+                ]
 
     def clear_empty(self):
         """Remove empty event entries from events dict."""

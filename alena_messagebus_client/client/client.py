@@ -1,6 +1,6 @@
 """
 Клиент (расширенное соединение websocket), использующий стандартный формат
-сообщения и автоматически выполняющий сериализацию/десериализацию сообщений.\
+сообщения и автоматически выполняющий сериализацию/десериализацию сообщений.
 """
 from collections import namedtuple
 import json
@@ -34,7 +34,7 @@ class MessageBusClient:
     """Клиент платформы виртуального ассистента.
 
     Подключается к платформенной шине и интегрируется с системой.
-    Работает подобно pyee EventEmitter, но добавялет сервисы для разработчика.
+    Работает подобно `pyee` `EventEmitter`, но добавялет сервисы для разработчика.
     """
 
     def __init__(
@@ -52,7 +52,10 @@ class MessageBusClient:
     def build_url(host, port, route, ssl):
         """Формирует url для веб-сокета."""
         return "{scheme}://{host}:{port}{route}".format(
-            scheme="wss" if ssl else "ws", host=host, port=str(port), route=route
+            scheme="wss" if ssl else "ws",
+            host=host,
+            port=str(port),
+            route=route,
         )
 
     def create_client(self):
@@ -102,7 +105,9 @@ class MessageBusClient:
         except Exception as e:
             LOG.error(f"Exception closing websocket at {self.client.url}: {e}")
 
-        LOG.warning("Message Bus Client " "will reconnect in %.1f seconds.", self.retry)
+        LOG.warning(
+            "Message Bus Client " "will reconnect in %.1f seconds.", self.retry
+        )
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
         try:
@@ -124,13 +129,13 @@ class MessageBusClient:
             message = args[1]
         parsed_message = Message.deserialize(message)
         self.emitter.emit("message", message)
-        self.emitter.emit(parsed_message.msg_type, parsed_message)
+        self.emitter.emit(parsed_message.message_type, parsed_message)
 
-    def emit(self, message):
+    def emit(self, message: Message) -> None:
         """Отправляет сообщение в шину.
 
         Отправляет сообщение в локальный процесс с помощью event emitter и в
-        вебокет для других процессов (сервисов).
+        вебсокет для других процессов (сервисов).
 
         Args:
             message (Message): Сообщение.
@@ -149,8 +154,9 @@ class MessageBusClient:
                 self.client.send(json.dumps(message.__dict__))
         except WebSocketConnectionClosedException:
             LOG.warning(
-                "Could not send %s message because connection " "has been closed",
-                message.msg_type,
+                "Could not send %s message because connection "
+                "has been closed",
+                message.message_type,
             )
 
     def collect_responses(
@@ -191,8 +197,12 @@ class MessageBusClient:
             handler_id = str(uuid4())
             # Immediately respond that something is working on the issue
             acknowledge = msg.reply(
-                msg.msg_type + ".handling",
-                data={"query": collect_id, "handler": handler_id, "timeout": timeout},
+                msg.message_type + ".handling",
+                data={
+                    "query": collect_id,
+                    "handler": handler_id,
+                    "timeout": timeout,
+                },
             )
             self.emit(acknowledge)
             func(CollectionMessage.from_message(msg, handler_id, collect_id))
@@ -219,20 +229,20 @@ class MessageBusClient:
         Arguments:
             message (Message): Отправляемое сообщение.
             reply_type (str): Ожидаемый тип ответного сообщения.
-                              Defaults to "<message.msg_type>.response".
+                              Defaults to "<message.message_type>.response".
             timeout: Время ожидания, сек.
 
         Returns:
             Полученное сообщение или None при истечении времени ожидания.
         """
-        message_type = reply_type or message.msg_type + ".response"
+        message_type = reply_type or message.message_type + ".response"
         waiter = MessageWaiter(self, message_type)  # Setup response handler
         # Send message and wait for it's response
         self.emit(message)
         return waiter.wait(timeout)
 
     def on(self, event_name, func):
-        """Регистрирует колбэк с event emitter.
+        """Регистрирует колбэк с `event emitter`.
 
         Args:
             event_name (str): Тип сообщения.
@@ -319,7 +329,7 @@ def echo():
     message_bus_client = MessageBusClient()
 
     def repeat_utterance(message):
-        message.msg_type = "speak"
+        message.message_type = "speak"
         message_bus_client.emit(message)
 
     message_bus_client.on("message", create_echo_function(None))

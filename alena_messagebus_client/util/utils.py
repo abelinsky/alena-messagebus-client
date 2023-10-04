@@ -13,7 +13,7 @@ def create_echo_function(name: str) -> Callable[[str], None]:
         name (str): Имя процесса.
 
     Returns:
-        func: Функция для логированияю
+        func: Функция для логирования.
     """
     log = logging.getLogger(name)
 
