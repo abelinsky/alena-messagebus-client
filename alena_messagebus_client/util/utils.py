@@ -20,8 +20,8 @@ def create_echo_function(name: str) -> Callable[[str], None]:
     def echo(message: str) -> None:
         try:
             msg = json.loads(message)
-            msg_type = msg.get("type", "")
-            if msg_type == "registration":
+            message_type = msg.get("type", "")
+            if message_type == "registration":
                 msg["data"]["token"] = None
                 message = json.dumps(msg)
         except Exception as exc:

@@ -80,14 +80,14 @@ class MessageCollector:
             self.on_response_callback(msg)
 
     def _setup_collection_handlers(self):
-        base_msg_type = self.message.msg_type
-        self.bus.on(base_msg_type + ".handling", self._register_handler)
-        self.bus.on(base_msg_type + ".response", self._receive_response)
+        base_message_type = self.message.message_type
+        self.bus.on(base_message_type + ".handling", self._register_handler)
+        self.bus.on(base_message_type + ".response", self._receive_response)
 
     def _teardown_collection_handlers(self):
-        base_msg_type = self.message.msg_type
-        self.bus.remove(base_msg_type + ".handling", self._register_handler)
-        self.bus.remove(base_msg_type + ".response", self._receive_response)
+        base_message_type = self.message.message_type
+        self.bus.remove(base_message_type + ".handling", self._register_handler)
+        self.bus.remove(base_message_type + ".response", self._receive_response)
 
     def start(self):
         self._setup_collection_handlers()

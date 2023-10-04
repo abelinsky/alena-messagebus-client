@@ -27,8 +27,8 @@ class TestMessage(TestCase):
         )
         msg_string = source.serialize()
         reassembled = Message.deserialize(msg_string)
-        self.assertEqual(source.msg_type, reassembled.msg_type)
-        self.assertEqual(source.data, reassembled.data)
+        self.assertEqual(source.message_type, reassembled.message_type)
+        self.assertEqual(source.payload, reassembled.data)
         self.assertEqual(source.context, reassembled.context)
 
     def test_response(self):
@@ -39,8 +39,8 @@ class TestMessage(TestCase):
             context={"origin": "earth"},
         )
         response_msg = source.response()
-        self.assertEqual(response_msg.msg_type, "test_type.response")
-        self.assertEqual(response_msg.data, {})
+        self.assertEqual(response_msg.message_type, "test_type.response")
+        self.assertEqual(response_msg.payload, {})
         self.assertEqual(response_msg.context, source.context)
 
     def test_reply(self):

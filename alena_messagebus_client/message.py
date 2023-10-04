@@ -64,24 +64,24 @@ class Message:
             obj.get("context") or {},
         )
 
-    def forward(self, msg_type: str, payload=None):
+    def forward(self, message_type: str, payload=None):
         """Создает новый объект с аналогичным контекстом.
 
         Args:
-            msg_type (str): тип нового сообщений
+            message_type (str): тип нового сообщений
             payload (dict): данные нового сообщения
 
         Returns:
             Message: Новый объект `Message`
         """
         payload = payload or {}
-        return Message(msg_type, payload, context=self.context)
+        return Message(message_type, payload, context=self.context)
 
-    def reply(self, msg_type: str, payload: dict = None, context: dict = None):
+    def reply(self, message_type: str, payload: dict = None, context: dict = None):
         """Формирует ответное сообщение.
 
         Args:
-            msg_type (str): тип сообщения.
+            message_type (str): тип сообщения.
             payload (dict): полезная нагрузка сообщения.
             context (dict): контекст нового сообщения.
 
@@ -101,12 +101,12 @@ class Message:
             s = new_context["destination"]
             new_context["destination"] = new_context["source"]
             new_context["source"] = s
-        return Message(msg_type, payload, context=new_context)
+        return Message(message_type, payload, context=new_context)
 
     def response(self, payload=None, context=None):
-        return self.reply(self.msg_type + ".response", payload, context)
+        return self.reply(self.message_type + ".response", payload, context)
 
-    def publish(self, msg_type, payload, context=None):
+    def publish(self, message_type, payload, context=None):
         context = context or {}
         new_context = self.context.copy()
         for key in context:
@@ -115,7 +115,7 @@ class Message:
         if "target" in new_context:
             del new_context["target"]
 
-        return Message(msg_type, payload, context=new_context)
+        return Message(message_type, payload, context=new_context)
 
 
 def dig_for_message(max_records: int = 10) -> Optional[Message]:
@@ -146,10 +146,8 @@ class CollectionMessage(Message):
     these states back to the origin.
     """
 
-    def __init__(
-        self, msg_type, handler_id, query_id, payload=None, context=None
-    ):
-        super().__init__(msg_type, payload, context)
+    def __init__(self, message_type, handler_id, query_id, payload=None, context=None):
+        super().__init__(message_type, payload, context)
         self.handler_id = handler_id
         self.query_id = query_id
 
@@ -166,7 +164,7 @@ class CollectionMessage(Message):
             CollectionMessage based on the original Message object
         """
         return cls(
-            message.msg_type,
+            message.message_type,
             handler_id,
             query_id,
             message.payload,
@@ -190,7 +188,7 @@ class CollectionMessage(Message):
         payload["handler"] = self.handler_id
         payload["succeeded"] = True
         response_message = self.reply(
-            self.msg_type + ".response", payload, context or self.context
+            self.message_type + ".response", payload, context or self.context
         )
         return response_message
 
@@ -211,7 +209,7 @@ class CollectionMessage(Message):
         payload["handler"] = self.handler_id
         payload["succeeded"] = False
         response_message = self.reply(
-            self.msg_type + ".response", payload, self.context
+            self.message_type + ".response", payload, self.context
         )
         return response_message
 
@@ -233,6 +231,6 @@ class CollectionMessage(Message):
         payload["handler"] = self.handler_id
         payload["timeout"] = timeout
         response_message = self.reply(
-            self.msg_type + ".handling", payload, self.context
+            self.message_type + ".handling", payload, self.context
         )
         return response_message

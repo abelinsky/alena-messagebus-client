@@ -11,7 +11,7 @@ class MessageWaiter:
 
     def __init__(self, message_bus, message_type):
         self.message_bus = message_bus
-        self.msg_type = message_type
+        self.message_type = message_type
         self.received_msg = None
         self.response_event = Event()
         self.message_bus.once(message_type, self._handler)
@@ -34,7 +34,7 @@ class MessageWaiter:
         if not self.response_event.is_set():
             # Очистка
             try:
-                self.message_bus.remove(self.msg_type, self._handler)
+                self.message_bus.remove(self.message_type, self._handler)
             except (ValueError, KeyError):
                 # ValueError occurs on pyee 5.0.1 removing handlers
                 # registered with once.
