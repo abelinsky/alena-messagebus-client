@@ -34,11 +34,17 @@ class MessageBusClient:
     """Клиент платформы виртуального ассистента.
 
     Подключается к платформенной шине и интегрируется с системой.
-    Работает подобно `pyee` `EventEmitter`, но добавялет сервисы для разработчика.
+    Работает подобно `pyee` `EventEmitter`, но добавляет сервисы
+    для разработчика.
     """
 
     def __init__(
-        self, host="0.0.0.0", port=8181, route="/core", ssl=False, emitter=None
+        self,
+        host: str = "0.0.0.0",
+        port: int = 8181,
+        route: str = "/core",
+        ssl: bool = False,
+        emitter: ExecutorEventEmitter | None = None,
     ):
         self.config = MessageBusClientConf(host, port, route, ssl)
         self.emitter = emitter or ExecutorEventEmitter()
@@ -49,7 +55,7 @@ class MessageBusClient:
         self.wrapped_funcs = {}
 
     @staticmethod
-    def build_url(host, port, route, ssl):
+    def build_url(host: str, port: int, route: str, ssl: bool) -> str:
         """Формирует url для веб-сокета."""
         return "{scheme}://{host}:{port}{route}".format(
             scheme="wss" if ssl else "ws",
@@ -58,7 +64,7 @@ class MessageBusClient:
             route=route,
         )
 
-    def create_client(self):
+    def create_client(self) -> WebSocketApp:
         """Создает клиента веб-сокета."""
         url = MessageBusClient.build_url(
             ssl=self.config.ssl,
@@ -74,27 +80,29 @@ class MessageBusClient:
             on_message=self.on_message,
         )
 
-    def on_open(self, *args):
+    def on_open(self, *args) -> None:
         """Обрабатывает событие "open" от сокета."""
-        LOG.info("Connected")
+        LOG.info("Подключен")
         self.connected_event.set()
         self.emitter.emit("open")
         self.retry = 5
 
-    def on_close(self, *args):
+    def on_close(self, *args) -> None:
         """Обрабатывает событие "close" от вебсокета."""
         self.emitter.emit("close")
 
-    def on_error(self, *args):
+    def on_error(self, *args) -> None:
         """При ошибке пробует подключиться заново."""
         if len(args) == 1:
             error = args[0]
         else:
             error = args[1]
         if isinstance(error, WebSocketConnectionClosedException):
-            LOG.warning("Could not send message because connection has closed")
+            LOG.warning(
+                "Невозможно отправить сообщение, т.к. соединение закрыто"
+            )
         elif isinstance(error, ConnectionRefusedError):
-            LOG.warning("Connection Refused. Is Messagebus Service running?")
+            LOG.warning("Соединение отклонено. Платформенная шина запущена?")
         else:
             LOG.exception("=== %s ===", repr(error))
 
@@ -103,10 +111,13 @@ class MessageBusClient:
             if self.client.keep_running:
                 self.client.close()
         except Exception as e:
-            LOG.error(f"Exception closing websocket at {self.client.url}: {e}")
+            LOG.error(
+                f"Exception при закрытии сокета на {self.client.url}: {e}"
+            )
 
         LOG.warning(
-            "Message Bus Client " "will reconnect in %.1f seconds.", self.retry
+            "Попытка соединения с шиной будет повторена через "
+            f"{self.retry:.1f} секунд.",
         )
         time.sleep(self.retry)
         self.retry = min(self.retry * 2, 60)
@@ -143,7 +154,7 @@ class MessageBusClient:
         if not self.connected_event.wait(10):
             if not self.started_running:
                 raise ValueError(
-                    "You must execute run_forever() " "before emitting messages"
+                    "You must execute run_forever() before emitting messages"
                 )
             self.connected_event.wait()
 
@@ -154,9 +165,8 @@ class MessageBusClient:
                 self.client.send(json.dumps(message.__dict__))
         except WebSocketConnectionClosedException:
             LOG.warning(
-                "Could not send %s message because connection "
-                "has been closed",
-                message.message_type,
+                f"Не удалось отправить {message.message_type} сообщение, "
+                "потому что соединение закрыто"
             )
 
     def collect_responses(
@@ -166,7 +176,7 @@ class MessageBusClient:
         max_timeout=3.0,
         direct_return_func=lambda msg: False,
     ):
-        """Собирает ответы от несколькиз обработчиков.
+        """Собирает ответы от нескольких обработчиков.
 
         Args:
             message (Message): Сообщение.
@@ -236,8 +246,7 @@ class MessageBusClient:
             Полученное сообщение или None при истечении времени ожидания.
         """
         message_type = reply_type or message.message_type + ".response"
-        waiter = MessageWaiter(self, message_type)  # Setup response handler
-        # Send message and wait for it's response
+        waiter = MessageWaiter(self, message_type)
         self.emit(message)
         return waiter.wait(timeout)
 
@@ -281,21 +290,23 @@ class MessageBusClient:
                 LOG.debug("Not able to find '%s'", event_name)
             self.emitter.remove_listener(event_name, func)
         except ValueError:
-            LOG.warning("Failed to remove event %s: %s", event_name, str(func))
+            LOG.warning(
+                "Не удалось удалить " f"событие {event_name}: {str(func)}"
+            )
             for line in traceback.format_stack():
                 LOG.warning(line.strip())
 
             if event_name not in self.emitter._events:
-                LOG.debug("Not able to find '%s'", event_name)
-            LOG.warning("Existing events: %s", repr(self.emitter._events))
+                LOG.debug("Не удалось найти '%s'", event_name)
+            LOG.warning("Существующие события: %s", repr(self.emitter._events))
             for evt in self.emitter._events:
                 LOG.warning("   %s", repr(evt))
                 LOG.warning("       %s", repr(self.emitter._events[evt]))
             if event_name in self.emitter._events:
-                LOG.debug("Removing found '%s'", event_name)
+                LOG.debug("При удалении '%s'", event_name)
             else:
-                LOG.debug("Not able to find '%s'", event_name)
-            LOG.warning("----- End dump -----")
+                LOG.debug("Не удалось найти '%s'", event_name)
+            LOG.warning("----- Завершение дампа -----")
 
     def remove_all_listeners(self, event_name):
         """Удаляет всех прослушивателей event_name.

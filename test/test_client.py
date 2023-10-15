@@ -7,7 +7,12 @@ from alena_messagebus_client.client import MessageWaiter, MessageCollector
 
 
 WS_CONF = {
-    "websocket": {"host": "testhost", "port": 1337, "route": "/core", "ssl": False}
+    "websocket": {
+        "host": "testhost",
+        "port": 1337,
+        "route": "/core",
+        "ssl": False,
+    }
 }
 
 
@@ -24,7 +29,7 @@ class TestMessageBusClient:
 
     def test_create_client_default_executor(self):
         mc = MessageBusClient()
-        assert type(mc.emitter) == ExecutorEventEmitter
+        assert isinstance(mc.emitter, ExecutorEventEmitter)
 
     def test_create_client_custom_executor(self):
         mock_emitter = Mock()
@@ -67,7 +72,10 @@ class TestMessageCollector:
         collector._register_handler(test_register)  # Inject response
 
         test_response = Mock(name="test_register")
-        test_response.data = {"query": collector.collect_id, "handler": "test_handler1"}
+        test_response.data = {
+            "query": collector.collect_id,
+            "handler": "test_handler1",
+        }
         collector._receive_response(test_response)
 
         assert collector.collect() == [test_response]

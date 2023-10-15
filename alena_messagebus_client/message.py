@@ -17,7 +17,8 @@ class Message:
     Attributes:
       message_type (str): тип данных, пересылаемых в сообщении.
       payload (dict): полезная информация, пересылаемая в сообщении.
-      context (dict): данные, не входящие в полезную нагрузку, например, информация об отправителе, получателе, предметной области и др.
+      context (dict): данные, не входящие в полезную нагрузку, например,
+      информация об отправителе, получателе, предметной области и др.
 
     """
 
@@ -64,7 +65,7 @@ class Message:
             obj.get("context") or {},
         )
 
-    def forward(self, message_type: str, payload=None):
+    def forward(self, message_type: str, payload: dict | None = None):
         """Создает новый объект с аналогичным контекстом.
 
         Args:
@@ -77,7 +78,9 @@ class Message:
         payload = payload or {}
         return Message(message_type, payload, context=self.context)
 
-    def reply(self, message_type: str, payload: dict = None, context: dict = None):
+    def reply(
+        self, message_type: str, payload: dict = None, context: dict = None
+    ):
         """Формирует ответное сообщение.
 
         Args:
@@ -103,10 +106,12 @@ class Message:
             new_context["source"] = s
         return Message(message_type, payload, context=new_context)
 
-    def response(self, payload=None, context=None):
+    def response(
+        self, payload: dict | None = None, context: dict | None = None
+    ):
         return self.reply(self.message_type + ".response", payload, context)
 
-    def publish(self, message_type, payload, context=None):
+    def publish(self, message_type: str, payload: dict, context=None):
         context = context or {}
         new_context = self.context.copy()
         for key in context:
@@ -120,15 +125,15 @@ class Message:
 
 def dig_for_message(max_records: int = 10) -> Optional[Message]:
     """
-    Dig Through the stack for message. Looks at the current stack
-    for a passed argument of type 'Message'.
+    Рассматривает стек сообщений. В текущем стеке ищет сообщение.
+
     Args:
-        max_records (int): Maximum number of stack records to look through
+        max_records (int): максимальное число записей для поиска
 
     Returns:
-        Message if found in args, else None
+        Message, если найдена в аргументах, иначе None
     """
-    stack = inspect.stack()[1:]  # First frame will be this function call
+    stack = inspect.stack()[1:]  # на первом месте будет сама эта функция
     stack = stack if len(stack) <= max_records else stack[:max_records]
     for record in stack:
         args = inspect.getargvalues(record.frame)
@@ -140,28 +145,26 @@ def dig_for_message(max_records: int = 10) -> Optional[Message]:
 
 
 class CollectionMessage(Message):
-    """Extension of the Message class for use with collect handlers.
+    """Расширение класса сообщение с обработчиком сборщиков."""
 
-    The class provides the convenience methods success and failure to report
-    these states back to the origin.
-    """
-
-    def __init__(self, message_type, handler_id, query_id, payload=None, context=None):
+    def __init__(
+        self, message_type, handler_id, query_id, payload=None, context=None
+    ):
         super().__init__(message_type, payload, context)
         self.handler_id = handler_id
         self.query_id = query_id
 
     @classmethod
     def from_message(cls, message, handler_id, query_id):
-        """Build a CollectionMessage based of a Message object.
+        """Формирует CollectionMessage из Message.
 
         Args:
-            message (Message): the original message
-            handler_id (str): the handler_id of the recipient
-            query_id (str): the query session id
+            message (Message): исходное сообщение
+            handler_id (str): handler_id получателя
+            query_id (str): идентификатор сессии
 
         Returns:
-            CollectionMessage based on the original Message object
+            CollectionMessage на основе исходного сообщения
         """
         return cls(
             message.message_type,
@@ -171,15 +174,15 @@ class CollectionMessage(Message):
             message.context,
         )
 
-    def success(self, payload=None, context=None):
-        """Create a message indicating a successful result.
+    def success(
+        self, payload: dict | None = None, context: dict | None = None
+    ) -> Message:
+        """Создает сообщение с индикацией успешной операции.
 
-        The handler could handle the query and created some sort of response.
-        The source and destination is switched in the context like when
-        sending a normal response message.
+        Args:
+            payload (dict): данные
+            context (dict): контекст
 
-            payload (dict): message payload
-            context (dict): message context
         Returns:
             Message
         """
@@ -193,14 +196,12 @@ class CollectionMessage(Message):
         return response_message
 
     def failure(self):
-        """Create a message indicating a failing result.
+        """Создает сообщение с индикацией неуспешной операции.
 
-        The handler could not handle the query.
-        The source and destination is switched in the context like when
-        sending a normal response message.
+        Args:
+            payload (dict): данные
+            context (dict): контекст
 
-            payload (dict): message payload
-            context (dict): message context
         Returns:
             Message
         """
@@ -214,17 +215,13 @@ class CollectionMessage(Message):
         return response_message
 
     def extend(self, timeout):
-        """Extend current timeout,
+        """Расширяет текущий таймаут.
 
-        The timeout provided will be added to the existing timeout.
-        The source and destination is switched in the context like when
-        sending a normal response message.
-
-        Arguments:
-            timeout (int/float): timeout extension
+        Args:
+            timeout (int/float): расширение таймаута
 
         Returns:
-            Extension message.
+            расширенное сообщение
         """
         payload = {}
         payload["query"] = self.query_id

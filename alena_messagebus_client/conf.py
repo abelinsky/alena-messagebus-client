@@ -6,7 +6,9 @@ import json
 from .client import MessageBusClient
 
 
-def client_from_config(subconf="core", file_path="/etc/alena/messagebus.conf"):
+def client_from_config(
+    subconf: str = "core", file_path: str = "/etc/alena/messagebus.conf"
+) -> MessageBusClient:
     """Загружает настройки из файла.
 
     Файл с настройками представляет собой json.
@@ -26,6 +28,7 @@ def client_from_config(subconf="core", file_path="/etc/alena/messagebus.conf"):
     Args:
         subconf:    выбираемая конфигурация, по умолчанию "core"
         file_path:  путь к файлу с настройкамию
+
     Returns:
         MessageBusClient инстанс на основе настроек.
     """

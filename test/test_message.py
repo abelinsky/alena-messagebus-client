@@ -19,7 +19,8 @@ def get_message_no_name(_):
 
 class TestMessage(TestCase):
     def test_serialize_deserialize(self):
-        """Assert that a serized message is recreated when deserialized."""
+        """Проверяет, что сериализованное сообщение восстанавливается
+        после десериализации."""
         source = Message(
             "test_type",
             data={"robot": "marvin", "android": "data"},
@@ -32,7 +33,7 @@ class TestMessage(TestCase):
         self.assertEqual(source.context, reassembled.context)
 
     def test_response(self):
-        """Assert that the .response is added to the message type for response."""
+        """Проверяет, что .response добавляется к сообщению при ответе."""
         source = Message(
             "test_type",
             data={"robot": "marvin", "android": "data"},
@@ -44,7 +45,7 @@ class TestMessage(TestCase):
         self.assertEqual(response_msg.context, source.context)
 
     def test_reply(self):
-        """Assert that the source and destination are swapped"""
+        """Проверяет, что source и destination меняются местами."""
         source = Message(
             "test_type",
             data={"robot": "marvin", "android": "data"},
@@ -52,8 +53,12 @@ class TestMessage(TestCase):
         )
 
         reply_msg = source.reply("reply_type")
-        self.assertEqual(reply_msg.context["source"], source.context["destination"])
-        self.assertEqual(reply_msg.context["destination"], source.context["source"])
+        self.assertEqual(
+            reply_msg.context["source"], source.context["destination"]
+        )
+        self.assertEqual(
+            reply_msg.context["destination"], source.context["source"]
+        )
 
         # assert that .response calls .reply internally as stated in docstrings
         response_msg = source.response()
@@ -86,7 +91,6 @@ class TestMessage(TestCase):
         wrapper_method(message)
 
     def test_dig_for_message_invalid_type(self):
-        # Message that should be ignored
         _ = Message("test message", {"test": "data"}, {"time": time()})
 
         def wrapper_method(_):
@@ -95,6 +99,5 @@ class TestMessage(TestCase):
         self.assertIsNone(wrapper_method(dict()))
 
     def test_dig_for_message_no_method_call(self):
-        # Message that should be ignored
         _ = Message("test message", {"test": "data"}, {"time": time()})
         self.assertIsNone(dig_for_message())

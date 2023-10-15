@@ -10,7 +10,11 @@ def required(requirements_file: str) -> None:
     base_dir = os.path.abspath(os.path.dirname(__file__))
     with open(os.path.join(base_dir, requirements_file), "r") as f:
         requirements = f.read().splitlines()
-        return [pkg for pkg in requirements if pkg.strip() and not pkg.startswith("#")]
+        return [
+            pkg
+            for pkg in requirements
+            if pkg.strip() and not pkg.startswith("#")
+        ]
 
 
 setup(

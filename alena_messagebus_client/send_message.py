@@ -14,14 +14,19 @@ def send(message: str, payload: dict = None, config=None) -> None:
 
     Args:
         message (str): Отправляемое сообщение.
-        payload (dict, optional): Полезная нагрузка (данные). По умолчанию None.
-        config (_type_, optional): _description_. По умолчанию None.
+        payload (dict, optional): Полезная нагрузка (данные).
+            По умолчанию None.
+        config (_type_, optional): конфиг.
+            По умолчанию None.
     """
     payload = payload or {}
     config = config or {}
 
     url = MessageBusClient.build_url(
-        config.get("host"), config.get("port"), config.get("route"), config.get("ssl")
+        config.get("host"),
+        config.get("port"),
+        config.get("route"),
+        config.get("ssl"),
     )
 
     ws = create_connection(url)
