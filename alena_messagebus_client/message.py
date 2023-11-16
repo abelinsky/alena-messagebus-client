@@ -8,7 +8,7 @@
 import inspect
 import json
 from copy import deepcopy
-from typing import Optional
+from typing_extensions import Self
 
 
 class Message:
@@ -43,11 +43,12 @@ class Message:
                 "type": self.message_type,
                 "payload": self.payload,
                 "context": self.context,
-            }
+            },
+            ensure_ascii=False,
         )
 
     @staticmethod
-    def deserialize(value: str):
+    def deserialize(value: str) -> Self:
         """Формирует объект `Message` из строки.
 
         Предназначен для создания объекта из строки, полученной из веб-сокета.
@@ -65,7 +66,7 @@ class Message:
             obj.get("context") or {},
         )
 
-    def forward(self, message_type: str, payload: dict | None = None):
+    def forward(self, message_type: str, payload: dict | None = None) -> Self:
         """Создает новый объект с аналогичным контекстом.
 
         Args:
@@ -80,7 +81,7 @@ class Message:
 
     def reply(
         self, message_type: str, payload: dict = None, context: dict = None
-    ):
+    ) -> Self:
         """Формирует ответное сообщение.
 
         Args:
@@ -108,10 +109,12 @@ class Message:
 
     def response(
         self, payload: dict | None = None, context: dict | None = None
-    ):
+    ) -> Self:
         return self.reply(self.message_type + ".response", payload, context)
 
-    def publish(self, message_type: str, payload: dict, context=None):
+    def publish(
+        self, message_type: str, payload: dict, context: dict = None
+    ) -> Self:
         context = context or {}
         new_context = self.context.copy()
         for key in context:
@@ -123,7 +126,7 @@ class Message:
         return Message(message_type, payload, context=new_context)
 
 
-def dig_for_message(max_records: int = 10) -> Optional[Message]:
+def dig_for_message(max_records: int = 10) -> Message | None:
     """
     Рассматривает стек сообщений. В текущем стеке ищет сообщение.
 
@@ -214,7 +217,7 @@ class CollectionMessage(Message):
         )
         return response_message
 
-    def extend(self, timeout):
+    def extend(self, timeout: float):
         """Расширяет текущий таймаут.
 
         Args:

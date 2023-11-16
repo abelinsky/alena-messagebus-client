@@ -162,7 +162,9 @@ class MessageBusClient:
             if hasattr(message, "serialize"):
                 self.client.send(message.serialize())
             else:
-                self.client.send(json.dumps(message.__dict__))
+                self.client.send(
+                    json.dumps(message.__dict__, ensure_ascii=False)
+                )
         except WebSocketConnectionClosedException:
             LOG.warning(
                 f"Не удалось отправить {message.message_type} сообщение, "
@@ -171,10 +173,10 @@ class MessageBusClient:
 
     def collect_responses(
         self,
-        message,
-        min_timeout=0.2,
-        max_timeout=3.0,
-        direct_return_func=lambda msg: False,
+        message: Message,
+        min_timeout: float = 0.2,
+        max_timeout: float = 3.0,
+        direct_return_func: callable = lambda msg: False,
     ):
         """Собирает ответы от нескольких обработчиков.
 
@@ -182,8 +184,7 @@ class MessageBusClient:
             message (Message): Сообщение.
             min_timeout (int/float): Минимальное время ожидания ответа.
             max_timeout (int/float): Максимальное время ожидания ответа.
-            direct_return_func (callable): Optional function for allowing an
-                early return (not all registered handlers need to respond)
+            direct_return_func (callable): колбэк
 
             Returns:
                 (list) собранные ответы.
@@ -193,7 +194,7 @@ class MessageBusClient:
         )
         return collector.collect()
 
-    def on_collect(self, event_name, func, timeout=2):
+    def on_collect(self, event_name: str, func: callable, timeout: float = 2):
         """Создает обработчик.
 
         Args:
@@ -202,10 +203,9 @@ class MessageBusClient:
             timeout (int/float): Таймаут для обработчика.
         """
 
-        def wrapper(msg):
+        def wrapper(msg: Message):
             collect_id = msg.context["__collect_id__"]
             handler_id = str(uuid4())
-            # Immediately respond that something is working on the issue
             acknowledge = msg.reply(
                 msg.message_type + ".handling",
                 data={
@@ -220,7 +220,7 @@ class MessageBusClient:
         self.wrapped_funcs[func] = wrapper
         self.on(event_name, wrapper)
 
-    def wait_for_message(self, message_type, timeout=3.0):
+    def wait_for_message(self, message_type: str, timeout: float = 3.0):
         """Ожидает сообщение конкретного типа.
 
         Arguments:
@@ -233,7 +233,12 @@ class MessageBusClient:
 
         return MessageWaiter(self, message_type).wait(timeout)
 
-    def wait_for_response(self, message, reply_type=None, timeout=3.0):
+    def wait_for_response(
+        self,
+        message: Message,
+        reply_type: str | None = None,
+        timeout: float = 3.0,
+    ):
         """Отправляет сообщение м ждет ответюа
 
         Arguments:
@@ -250,7 +255,7 @@ class MessageBusClient:
         self.emit(message)
         return waiter.wait(timeout)
 
-    def on(self, event_name, func):
+    def on(self, event_name: str, func: callable):
         """Регистрирует колбэк с `event emitter`.
 
         Args:
@@ -259,7 +264,7 @@ class MessageBusClient:
         """
         self.emitter.on(event_name, func)
 
-    def once(self, event_name, func):
+    def once(self, event_name: str, func: callable):
         """Регистрирует колбэк с event emitter для разового вызова.
 
         Args:
@@ -268,7 +273,7 @@ class MessageBusClient:
         """
         self.emitter.once(event_name, func)
 
-    def remove(self, event_name, func):
+    def remove(self, event_name: str, func: callable):
         """Удаляет зарегистрированное сообщение.
 
         Args:
@@ -280,11 +285,11 @@ class MessageBusClient:
         else:
             self._remove_normal(event_name, func)
 
-    def _remove_wrapped(self, event_name, external_func):
+    def _remove_wrapped(self, event_name: str, external_func: callable):
         wrapper = self.wrapped_funcs.pop(external_func)
         self._remove_normal(event_name, wrapper)
 
-    def _remove_normal(self, event_name, func):
+    def _remove_normal(self, event_name: str, func: callable):
         try:
             if event_name not in self.emitter._events:
                 LOG.debug("Not able to find '%s'", event_name)
@@ -308,7 +313,7 @@ class MessageBusClient:
                 LOG.debug("Не удалось найти '%s'", event_name)
             LOG.warning("----- Завершение дампа -----")
 
-    def remove_all_listeners(self, event_name):
+    def remove_all_listeners(self, event_name: str):
         """Удаляет всех прослушивателей event_name.
 
         Arguments:
@@ -339,7 +344,7 @@ class MessageBusClient:
 def echo():
     message_bus_client = MessageBusClient()
 
-    def repeat_utterance(message):
+    def repeat_utterance(message: Message):
         message.message_type = "speak"
         message_bus_client.emit(message)
 

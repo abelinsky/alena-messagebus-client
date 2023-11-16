@@ -9,7 +9,7 @@ class MessageWaiter:
         message_type: Тип ожидаемого сообщения.
     """
 
-    def __init__(self, message_bus, message_type):
+    def __init__(self, message_bus, message_type: str):
         self.message_bus = message_bus
         self.message_type = message_type
         self.received_msg = None
@@ -21,7 +21,7 @@ class MessageWaiter:
         self.received_msg = message
         self.response_event.set()
 
-    def wait(self, timeout=3.0):
+    def wait(self, timeout: float = 3.0):
         """Ожидает сообщение.
 
         Args:
@@ -36,9 +36,5 @@ class MessageWaiter:
             try:
                 self.message_bus.remove(self.message_type, self._handler)
             except (ValueError, KeyError):
-                # ValueError occurs on pyee 5.0.1 removing handlers
-                # registered with once.
-                # KeyError may theoretically occur if the event occurs as
-                # the handler is removed
                 pass
         return self.received_msg
